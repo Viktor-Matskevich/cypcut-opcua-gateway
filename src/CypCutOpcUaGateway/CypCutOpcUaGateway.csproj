@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>CypCutOpcUaGateway</AssemblyName>
+    <RootNamespace>CypCutOpcUaGateway</RootNamespace>
+    <Version>0.1.0</Version>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.5.374.126" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\config\gateway.json" Link="config\gateway.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\config\machines.csv" Link="config\machines.csv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
