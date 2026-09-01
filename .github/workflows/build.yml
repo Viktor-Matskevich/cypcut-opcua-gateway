@@ -1,0 +1,34 @@
+name: Build and self-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/CypCutOpcUaGateway/CypCutOpcUaGateway.csproj
+
+      - name: Build
+        run: dotnet build src/CypCutOpcUaGateway/CypCutOpcUaGateway.csproj --configuration Release --no-restore
+
+      - name: JSON mapping self-test
+        run: dotnet run --project src/CypCutOpcUaGateway/CypCutOpcUaGateway.csproj --configuration Release --no-build -- --self-test
+
+      - name: Configuration validation
+        run: dotnet run --project src/CypCutOpcUaGateway/CypCutOpcUaGateway.csproj --configuration Release --no-build -- --validate-config
