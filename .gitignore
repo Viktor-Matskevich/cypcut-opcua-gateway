@@ -1,0 +1,30 @@
+# Build output
+bin/
+obj/
+build/
+dist/
+artifacts/
+
+# Local runtime and certificates
+runtime/
+pki/
+
+# Local deployment configuration
+config/*.local.json
+config/*.local.csv
+
+# IDE and OS files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs and captures
+*.log
+*.pcap
+*.pcapng
+captures/
