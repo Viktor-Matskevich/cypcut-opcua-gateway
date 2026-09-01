@@ -1,0 +1,6 @@
+{
+  "name": "CypCut-Standalone-Gateway",
+  "publishedIp": "192.0.2.10",
+  "pkiDirectory": "pki",
+  "requestTimeoutMs": 3000
+}
