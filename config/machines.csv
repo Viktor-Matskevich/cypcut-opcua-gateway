@@ -1,0 +1,11 @@
+Enabled,Id,Name,CypCutIp,CypCutPort,OpcUaPort,EndpointPath,PollIntervalMs,AppName
+true,laser-01,Laser 01,192.0.2.101,8080,4880,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-02,Laser 02,192.0.2.102,8080,4881,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-03,Laser 03,192.0.2.103,8080,4882,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-04,Laser 04,192.0.2.104,8080,4883,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-05,Laser 05,192.0.2.105,8080,4884,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-06,Laser 06,192.0.2.106,8080,4885,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-07,Laser 07,192.0.2.107,8080,4886,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-08,Laser 08,192.0.2.108,8080,4887,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-09,Laser 09,192.0.2.109,8080,4888,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
+false,laser-10,Laser 10,192.0.2.110,8080,4889,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
