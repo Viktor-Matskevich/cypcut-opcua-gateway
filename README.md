@@ -1,88 +1,71 @@
 # CypCut to OPC UA Gateway
 
-[![Build](https://github.com/Viktor-Matskevich/cypcut-opcua-gateway/actions/workflows/build.yml/badge.svg)](https://github.com/Viktor-Matskevich/cypcut-opcua-gateway/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status: Experimental](https://img.shields.io/badge/status-experimental-orange.svg)](#project-status)
+[![Status: Research](https://img.shields.io/badge/status-research-blue.svg)](#project-status)
 
-An independent Windows gateway that polls configurable CypCut data endpoints and
-exposes each enabled laser machine through its own OPC UA endpoint.
+An independent .NET gateway for exploring vendor-specific laser-controller telemetry and exposing normalized data through OPC UA.
 
-> **Project status: Experimental — field validation pending.**
->
-> The build, JSON mapping, configuration validation, and simultaneous startup of
-> ten OPC UA endpoints have been tested. The data route must still be validated
-> against the specific CypCut installation used on a real machine.
+> **Project status: Research / clean-room integration.** The repository contains an independent HTTP/JSON-to-OPC-UA prototype. A separate field observation confirmed a live CypCut/PCUI TCP channel on port `20112`; its protocol parser is **not yet part of this repository**.
 
 [Русская версия](README-RU.md)
 
 ## Why this project exists
 
-Laser machines often expose vendor-specific data while MDC, MES, SCADA, and
-analytics platforms expect a standard industrial interface. This gateway creates
-a configurable translation layer without coupling the machine to a particular
-monitoring platform.
+Industrial laser controllers often expose data through vendor-specific interfaces, while MDC, MES, SCADA, and analytics systems need stable, vendor-neutral data. This project documents and prototypes a translation layer without coupling the result to a particular monitoring platform.
 
 ```mermaid
 flowchart LR
-    M1["Laser 01<br/>HTTP :8080"] --> C1["Collector 01"]
-    M2["Laser 02<br/>HTTP :8080"] --> C2["Collector 02"]
-    subgraph G["Central Windows Gateway"]
-        C1 --> O1["OPC UA :4880"]
-        C2 --> O2["OPC UA :4881"]
-    end
-    O1 --> MDC["MDC / MES / SCADA"]
-    O2 --> MDC
+    A["Laser controller"] --> B["Independent collector"]
+    B --> C["Normalized data"]
+    C --> D["OPC UA"]
+    D --> E["MDC / MES / SCADA"]
 ```
 
-## Key capabilities
+## Transport scope
 
-- One central Windows service for multiple laser machines.
-- Per-machine `Enabled=true/false` switch.
-- Configurable source IP, source port, OPC UA port, polling interval, and route.
-- A separate OPC UA endpoint for every enabled machine.
-- 78 known process variables plus 9 identity and diagnostic variables.
-- Original response preserved in `Connection/RawJson`.
-- OPC UA quality status for missing or stale values.
-- Console mode for commissioning and Windows Service mode for production.
-- No external cloud or monitoring-server dependency.
+| Transport | Repository status | Field status |
+|---|---|---|
+| HTTP/JSON, example port `8080` | Implemented as a configurable prototype collector | Not claimed as field-validated here |
+| CypCut/PCUI TCP, observed port `20112` | Not included; clean-room parser is planned | Live transport, frame reception, tag extraction, and CRC checking observed on a real machine |
+
+The two ports serve different roles in the investigation. `8080` is an example configuration for the open HTTP/JSON prototype. `20112` is a separate PCUI transport observed during field work; it must not be represented as an implemented feature until the independent parser is added and tested.
+
+## Field-validated milestone
+
+On 2026-09-02, a separate field reference build established a live connection to a CypCut/PCUI controller over TCP `20112`.
+
+- binary frames were received and structurally decoded;
+- tag ID and value were extracted;
+- CRC validation succeeded;
+- one observed run processed 14,892 frames with 0 CRC errors;
+- normalized diagnostic output contained `NcState.SysState = 1` and a valid `Protocol20112` diagnostic block.
+
+This is evidence that the lower-level communication path exists. It does **not** yet validate the semantic mapping of machine states such as idle, run, pause, alarm, or cutting.
+
+See [docs/FIELD-VALIDATED-MILESTONE.md](docs/FIELD-VALIDATED-MILESTONE.md) and [docs/PUBLIC-RELEASE-SCOPE.md](docs/PUBLIC-RELEASE-SCOPE.md).
+
+## Included prototype capabilities
+
+- one configurable Windows service for multiple machines;
+- per-machine enable/disable switch;
+- configurable HTTP source address, source port, route, polling interval, and OPC UA port;
+- one OPC UA endpoint per enabled machine;
+- JSON mapping into a structured OPC UA address space;
+- configuration validation and self-test commands;
+- console mode for commissioning and Windows Service mode for deployment.
 
 ## Example topology
 
-The repository uses the documentation-only network `192.0.2.0/24`. Replace all
-example addresses before deployment.
+All addresses in this repository use documentation-only network `192.0.2.0/24`.
 
-| Machine | CypCut source | OPC UA output on gateway |
+| Machine | HTTP/JSON prototype source | OPC UA output |
 |---|---|---|
-| Laser 01 | `192.0.2.101:8080` | `opc.tcp://192.0.2.10:4880/CypCut/laser-01` |
-| Laser 02 | `192.0.2.102:8080` | `opc.tcp://192.0.2.10:4881/CypCut/laser-02` |
+| Laser 01 | `http://192.0.2.101:8080/...` | `opc.tcp://192.0.2.10:4880/CypCut/laser-01` |
+| Laser 02 | `http://192.0.2.102:8080/...` | `opc.tcp://192.0.2.10:4881/CypCut/laser-02` |
 
-## Configuration
+## Build and test
 
-Set the central server address in `config/gateway.json`:
-
-```json
-{
-  "name": "CypCut-Standalone-Gateway",
-  "publishedIp": "192.0.2.10",
-  "pkiDirectory": "pki",
-  "requestTimeoutMs": 3000
-}
-```
-
-Register machines in `config/machines.csv`:
-
-```csv
-Enabled,Id,Name,CypCutIp,CypCutPort,OpcUaPort,EndpointPath,PollIntervalMs,AppName
-true,laser-01,Laser 01,192.0.2.101,8080,4880,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
-false,laser-02,Laser 02,192.0.2.102,8080,4881,/api/monitor/cutSystemState?ip={ip}&appName={appName},1000,CypCut
-```
-
-`publishedIp` must belong to a network interface on the central server. Every
-enabled machine must use a unique `Id` and `OpcUaPort`.
-
-## Build and test from source
-
-Requirements: Windows or Linux with the .NET 8 SDK.
+Requirements: .NET 8 SDK on Windows or Linux.
 
 ```powershell
 dotnet restore .\src\CypCutOpcUaGateway\CypCutOpcUaGateway.csproj
@@ -91,72 +74,45 @@ dotnet run --project .\src\CypCutOpcUaGateway -- --self-test
 dotnet run --project .\src\CypCutOpcUaGateway -- --validate-config
 ```
 
-## Windows release workflow
-
-The packaged Windows release contains the runtime and four launch commands:
-
-| Command | Purpose |
-|---|---|
-| `RUN-01-VALIDATE.cmd` | Validate files, configuration, source ports, and internal mapping. |
-| `RUN-02-START-CONSOLE.cmd` | Run interactively and show connection errors during commissioning. |
-| `RUN-03-INSTALL-SERVICE.cmd` | Install and start the automatic Windows service. Run as Administrator. |
-| `RUN-04-UNINSTALL-SERVICE.cmd` | Remove the Windows service and its firewall rules. |
-
-Recommended sequence: configure → validate → console test → OPC UA client test →
-install service.
-
-## OPC UA information model
-
-Each endpoint contains one machine with these folders:
-
-- `Identity` — machine ID, name, source address, and ports.
-- `Connection` — connectivity, last update, last error, and raw response.
-- `State` — general state fields.
-- `NcState` — coordinates, program execution, speed, power, and I/O.
-- `DeviceState` — Z/height, gas, laser, following, and PWM state.
-- `GlobalParams` — machine-level motion and process parameters.
-
-See [docs/PARAMETERS.md](docs/PARAMETERS.md) for the complete 87-node catalog.
-
 ## Project status
 
-Completed:
+Completed in the open prototype:
 
-- clean standalone implementation;
+- standalone HTTP/JSON collector and normalized OPC UA model;
 - configuration and JSON-mapping self-tests;
-- one-machine runtime smoke test;
-- ten-machine concurrent OPC UA endpoint test;
-- PowerShell syntax validation;
-- Windows Service installation scripts.
+- multi-endpoint runtime smoke testing;
+- Windows Service scripts.
 
-Pending field validation:
+Confirmed separately in field work:
 
-- confirm the configured data route on a real CypCut installation;
-- capture an anonymized response sample;
-- verify which of the 78 process fields are populated by that version;
-- validate subscriptions from UaExpert or an MDC client during a cutting cycle.
+- live PCUI TCP `20112` connection;
+- binary frame reception and CRC validation;
+- preliminary tag extraction.
 
-The field procedure is documented in [docs/FIELD-VALIDATION.md](docs/FIELD-VALIDATION.md).
+Next work:
 
-## Independence and trademark notice
+- [ ] implement a clean-room TCP/20112 parser without copying legacy binaries or source;
+- [ ] validate frame format with independently captured, anonymized samples;
+- [ ] map confirmed tag/value combinations to physical machine states;
+- [ ] validate OPC UA subscriptions during a cutting cycle.
 
-This is an unofficial, independent integration project. It is not affiliated
-with, endorsed by, or maintained by the developer of CypCut. It contains no
-proprietary application binaries or closed source code. Product names are used
-only to describe interoperability.
+## Public-release safety boundary
+
+This repository intentionally excludes:
+
+- any proprietary monitoring-platform integration, protocol preset, URL, or identifier;
+- customer names, production data, machine serial numbers, and private IP addresses;
+- legacy adapter binaries, configuration files, logs, and documentation;
+- code copied or derived from closed-source components.
+
+The source in this repository is an independent implementation. Product names are used only to describe interoperability. This project is not affiliated with or endorsed by CypCut or any monitoring-platform vendor.
 
 ## Security
 
-The initial commissioning profile allows anonymous OPC UA access and
-`Security=None`. Do not expose the gateway to the public internet. Use a
-segmented industrial network and configure certificates and access controls
-before production deployment. See [SECURITY.md](SECURITY.md).
+Do not expose OPC UA endpoints or controller networks to the public internet. Use a segmented industrial network, least-privilege access, certificates, and access controls before production use. See [SECURITY.md](SECURITY.md).
 
 ## Engineering context
 
-This project demonstrates practical industrial connectivity: converting
-machine-specific telemetry into a stable, vendor-neutral interface that can be
-consumed by manufacturing intelligence systems.
+This is a portfolio project about practical industrial connectivity: observing an unknown machine interface, separating evidence from assumptions, and normalizing trustworthy data for manufacturing systems.
 
-Author: **Viktor Matskevich** — Industrial AI, machine connectivity, and
-intelligent systems for the physical world.
+Author: Viktor Matskevich — Industrial AI, machine connectivity, and intelligent systems for the physical world.
