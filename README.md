@@ -5,7 +5,7 @@
 
 An independent .NET gateway for exploring vendor-specific laser-controller telemetry and exposing normalized data through OPC UA.
 
-> **Project status: Research / clean-room integration.** The repository contains an independent HTTP/JSON-to-OPC-UA prototype. A separate field observation confirmed a live CypCut/PCUI TCP channel on port `20112`; its protocol parser is **not yet part of this repository**.
+> **Project status: Research / clean-room integration.** The repository contains an independent HTTP/JSON-to-OPC-UA prototype. Separate field reference builds have confirmed a live CypCut/PCUI TCP channel on port `20112` and an end-to-end path from that observed transport through a standalone gateway to a browsable OPC UA endpoint. The clean-room TCP/20112 parser is **not yet part of this repository**.
 
 [Русская версия](README-RU.md)
 
@@ -26,13 +26,15 @@ flowchart LR
 | Transport | Repository status | Field status |
 |---|---|---|
 | HTTP/JSON, example port `8080` | Implemented as a configurable prototype collector | Not claimed as field-validated here |
-| CypCut/PCUI TCP, observed port `20112` | Not included; clean-room parser is planned | Live transport, frame reception, tag extraction, and CRC checking observed on a real machine |
+| CypCut/PCUI TCP, observed port `20112` | Not included; clean-room parser is planned | Live transport, frame reception, tag extraction, CRC checking, and separate end-to-end OPC UA gateway validation observed on a real machine |
 
-The two ports serve different roles in the investigation. `8080` is an example configuration for the open HTTP/JSON prototype. `20112` is a separate PCUI transport observed during field work; it must not be represented as an implemented feature until the independent parser is added and tested.
+The two ports serve different roles in the investigation. `8080` is an example configuration for the open HTTP/JSON prototype. `20112` is a separate PCUI transport observed during field work; it must not be represented as an implemented open-source feature until the independent parser is added and tested.
 
-## Field-validated milestone
+## Field-validated milestones
 
-On 2026-09-02, a separate field reference build established a live connection to a CypCut/PCUI controller over TCP `20112`.
+### 2026-09-02 — transport and frame integrity
+
+A separate field reference build established a live connection to a CypCut/PCUI controller over TCP `20112`.
 
 - binary frames were received and structurally decoded;
 - tag ID and value were extracted;
@@ -40,7 +42,25 @@ On 2026-09-02, a separate field reference build established a live connection to
 - one observed run processed 14,892 frames with 0 CRC errors;
 - normalized diagnostic output contained `NcState.SysState = 1` and a valid `Protocol20112` diagnostic block.
 
-This is evidence that the lower-level communication path exists. It does **not** yet validate the semantic mapping of machine states such as idle, run, pause, alarm, or cutting.
+### 2026-09-04 — end-to-end gateway validation
+
+A later field run validated the broader path around the observed transport:
+
+```text
+CypCut / PCUI TCP 20112
+        ↓
+field reference collector / bridge
+        ↓
+standalone .NET gateway
+        ↓
+OPC UA endpoint
+        ↓
+UAExpert
+```
+
+Observed results included a live OPC UA endpoint, successful UAExpert browse/read, approximately 78 configured parameter nodes in the tested build, live normalized diagnostics exposed through OPC UA, and successful Windows Service deployment.
+
+These results are evidence that the integration path can work end-to-end. They do **not** yet validate complete semantic mapping of physical machine states such as idle, run, pause, alarm, or cutting, and they do not mean the public repository already contains the TCP/20112 parser.
 
 See [docs/FIELD-VALIDATED-MILESTONE.md](docs/FIELD-VALIDATED-MILESTONE.md) and [docs/PUBLIC-RELEASE-SCOPE.md](docs/PUBLIC-RELEASE-SCOPE.md).
 
@@ -87,7 +107,9 @@ Confirmed separately in field work:
 
 - live PCUI TCP `20112` connection;
 - binary frame reception and CRC validation;
-- preliminary tag extraction.
+- preliminary tag extraction;
+- end-to-end delivery through a standalone gateway to a browsable OPC UA endpoint;
+- Windows Service deployment in the tested field reference build.
 
 Next work:
 
